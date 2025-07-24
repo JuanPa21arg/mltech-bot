@@ -33,19 +33,27 @@ const client = new Client({
 
 // Evento: generar QR
 client.on('qr', async (qr) => {
-    const outputPath = path.join(qrDir, `qr_${userId}.png`);
-    const panelPath = `/home/ubuntu/mltech-bot/static/qrs/qr_${userId}.png`; // VPS ruta absoluta
-
     try {
-        await QRCode.toFile(outputPath, qr);
-        console.log(`✅ QR generado para user ${userId}: ${outputPath}`);
+        const qrBase64 = await QRCode.toDataURL(qr);
+        const res = await fetch(`${API_URL}/api/guardar_qr`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                qr: qrBase64
+            })
+        });
 
-        fs.copyFileSync(outputPath, panelPath);
-        console.log(`📂 QR copiado al panel: ${panelPath}`);
+        if (res.ok) {
+            console.log(`✅ QR enviado al panel para el usuario ${userId}`);
+        } else {
+            console.error('❌ Error al enviar el QR al panel:', await res.text());
+        }
     } catch (err) {
-        console.error('❌ Error al generar o copiar QR:', err);
+        console.error('❌ Error generando o enviando QR:', err.message);
     }
 });
+
 
 // Evento: listo
 client.on('ready', () => {
