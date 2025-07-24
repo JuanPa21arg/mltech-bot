@@ -4,6 +4,12 @@ const fetch = require('node-fetch');
 
 const args = process.argv.slice(2);
 const userId = args[0]; // Recibido como argumento
+const fs = require('fs');
+const path = require('path');
+
+const qrDir = path.join(__dirname, 'qrs');
+if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir);
+
 
 if (!userId) {
     console.error("❌ Falta userId. Ejecutá: node index.js <user_id>");
@@ -21,10 +27,19 @@ const client = new Client({
     }
 });
 
-client.on('qr', (qr) => {
-    console.log(`📲 Escaneá este código QR para usuario ID ${userId}:`);
-    qrcode.generate(qr, { small: true });
+const QRCode = require('qrcode');
+
+// Reemplazá el anterior client.on('qr') por este:
+client.on('qr', async (qr) => {
+    const outputPath = `./qrs/qr_${userId}.png`;
+    try {
+        await QRCode.toFile(outputPath, qr);
+        console.log(`✅ QR generado para user ${userId}: ${outputPath}`);
+    } catch (err) {
+        console.error('❌ Error al generar QR:', err);
+    }
 });
+
 
 client.on('ready', () => {
     console.log(`✅ Bot conectado y listo para usuario ${userId}`);
